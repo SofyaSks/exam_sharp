@@ -11,179 +11,142 @@ using System.IO;
 
 namespace exam_sharp
 {
-    
-    class Airplane // 1 объект
-    {
-        public Airplane()
-        {
-            speed = 0;
-            height = 0;
-        }
-        public void change_speed()
-        {            
-            ConsoleKeyInfo key = ReadKey(true);
-            switch (key.Key)
-            {
-                case ConsoleKey.D:
-                    if ((ConsoleModifiers.Shift & key.Modifiers) != 0)
-                    {
-                        WriteLine("+ 150 speed");
-                        speed += 150;
-                    }
-                    else
-                    {
-                        WriteLine("+ 50 speed");
-                        speed += 50;
-                    }
-                    break;
-                case ConsoleKey.A:
-                    if ((ConsoleModifiers.Shift & key.Modifiers) != 0)
-                    {
-                        WriteLine("- 150 speed");
-                        speed -= 150;
-                    }
-                    else
-                    {
-                        WriteLine("- 50 speed");
-                        speed -= 50;
-                    }
-                    break;
 
-            }
-        }
-
-        public void change_height()
-        {
-            ConsoleKeyInfo key = ReadKey(true);
-            switch (key.Key)
-            {
-                case ConsoleKey.W:
-                    if ((ConsoleModifiers.Shift & key.Modifiers) != 0)
-                    {
-                        WriteLine("+ 500 height");
-                        height += 500;
-                    }
-                    else
-                    {
-                        WriteLine("+ 250 height");
-                        height += 250;
-                    }
-                    break;
-                case ConsoleKey.S:
-                    if ((ConsoleModifiers.Shift & key.Modifiers) != 0)
-                    {
-                        WriteLine("- 500 height");
-                        height -= 500;
-                    }
-                    else
-                    {
-                        WriteLine("- 250 height");
-                        height -= 250;
-                    }
-                    break;
-
-            }
-        }
-
-        public int speed { get; set; }
-        public int height { get; set; }
-
-        int path = 1000;
-    }
-
-    class Dispathcher : Airplane
-    {
-        public Dispathcher()
-        {
-
-        }
-       public Dispathcher (string n)
-        {
-            name = n;
-        }
-
-        public void recommendedHeight(Airplane tmp)
-        {
-            Write($"Диспетчер {name} установил рекомендованную высоту: ");
-            Random N = new Random();
-            weather = 7 * tmp.speed - N.Next(-200, 200);
-            WriteLine(weather);
-        }
-
-        public void impose_Fine(Airplane tmp)
-        {
-            if(tmp.height!=weather)
-            {
-                if(tmp.height > 300 && tmp.height < 600)
-                {
-                    WriteLine("fine + 25");
-                    fine += 25;
-                }
-                if (tmp.height > 600 && tmp.height < 1000)
-                {
-                    WriteLine("fine + 50");
-                    fine += 50;
-                }
-            }
-        }
-
-        public void flight(Airplane tmp)
-        {
-            recommendedHeight(tmp);
-            tmp.change_height();
-            impose_Fine(tmp);
-            tmp.change_speed();
-        }
-
-        string name;
-        int weather;
-        int fine;     
-    }
-
-   /*class Flight : Dispathcher
-    {
-        public void flight(Airplane tmp)
-        {
-            recommendedHeight(tmp);
-            tmp.change_height();
-            impose_Fine(tmp);
-            tmp.change_speed();
-        }
-    }*/
-   
     internal class Program
     {
-        public delegate void AirplaneDelegate();
-        public event AirplaneDelegate AirplaneEvent;
+        static string file_name = "training_results.txt";
 
+        public class speedException : ApplicationException
+        {
+            string message = "Во время посадки взлёт запрещён.";
+
+            public override string Message
+            {
+                get { return message; }
+            }
+        }
+
+        public class zeroException : ApplicationException
+        {
+            string message = "Самолёт разбился";
+
+            public override string Message
+            {
+                get { return message; }
+            }
+        }
         static void Main(string[] args)
         {
-            AirplaneDelegate del = null;
-            WriteLine("УПРАВЛЕНИЕ НА WASD");
-            
-            Airplane a = new Airplane();
-            string name, name2;
-            Write("Введите имя первого диспетчера: ");
-            name = ReadLine();
-            Write("Введите имя второго диспетчера: ");
-            name2 = ReadLine();
-            WriteLine("Нажмите D, чтобы начать полёт");
+            DateTime dt = DateTime.Now;
 
-            Dispathcher d = new Dispathcher(name);
-            a.change_speed();
+            FlightDelegate del = null;
+            DispReg delreg = null;
+            WriteLine("УПРАВЛЕНИЕ НА WASD (чтобы не применять изменения нажмите X)");
 
-          //  Flight f = new Flight();
-
-            if (a.speed >= 50)
+            try
             {
-                while (a.speed <= 500)
+                using (FileStream fs = new FileStream(file_name, FileMode.Append))
                 {
-                    d.flight(a);
-                }  
-            }
+                    using (StreamWriter sw = new StreamWriter(fs, Encoding.Unicode))
+                    {
+                        sw.WriteLine(dt);
+                        Airplane a = new Airplane();
+                        string name1, name2;
+                        Write("Введите имя первого диспетчера: ");
+                        name1 = ReadLine();
+                        Clear();
+                        Write("Введите имя второго диспетчера: ");
+                        name2 = ReadLine();
+                        Clear();
 
-            
-            
+
+                        Dispathcher d = new Dispathcher(name1);
+                        Dispathcher d2 = new Dispathcher(name2);
+                        a.change_speed();
+                        d.recommendedHeight(a);
+
+
+                        del += a.change_height;
+                        del += a.change_speed;
+
+                        delreg += d.impose_Fine;
+                        delreg += d.check_fine;
+                        delreg += d.recommendedHeight;
+
+                        try
+                        {
+                            while (a.speed >= 50 && a.speed < 500)
+                            {
+                                foreach (FlightDelegate item in del.GetInvocationList())
+                                {
+                                    item();
+                                }
+
+                                foreach (DispReg item in delreg.GetInvocationList())
+                                {
+                                    item(a);
+                                }
+
+                            }
+
+                            d.change += a.halfWay;
+                            d.halfWay("Половина пути пройдена", ref d, ref d2, ref delreg);
+                            WriteLine("Можете приступить к снижению");
+                            sw.WriteLine("Можете приступить к снижению");
+
+
+                            try
+                            {
+                                int maxheight;
+                                while (a.speed >= 50 && a.speed <= 1000 && a.height >= 0)
+                                {
+                                    maxheight = a.height;
+                                    foreach (FlightDelegate item in del.GetInvocationList())
+                                    {
+                                        item();
+                                    }
+
+                                    foreach (DispReg item in delreg.GetInvocationList())
+                                    {
+                                        item(a);
+                                    }
+
+                                    if (a.height > maxheight)
+                                    {
+                                        throw new speedException();
+                                    }
+                                }
+                            }
+                            catch (speedException spex)
+                            {
+                                WriteLine(spex.Message);
+                            }
+                            catch (Exception e)
+                            {
+                                WriteLine(e.Message);
+                            }
+
+                            if(a.speed == 0 || a.height == 0)
+                            {
+                                throw new zeroException();
+                            }
+                        }
+                        catch (zeroException ze)
+                        {
+                            WriteLine(ze);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                WriteLine(e.Message);
+            }
         }
     }
 }
+       
+
+
+    
+
