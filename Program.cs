@@ -86,20 +86,30 @@ namespace exam_sharp
                                 {
                                     item(a);
                                 }
+                                if (a.speed >= 500)
+                                {
+                                    d.change += a.halfWay;
+                                    d.halfWay("Половина пути пройдена", ref d, ref d2, ref delreg);
+                                    WriteLine("Можете приступить к снижению");
+                                    sw.WriteLine("Можете приступить к снижению");
+                                }
+                                if (a.speed == 0 || a.height == 0)
+                                {
+                                    throw new zeroException();
+                                }
 
                             }
 
-                            d.change += a.halfWay;
-                            d.halfWay("Половина пути пройдена", ref d, ref d2, ref delreg);
-                            WriteLine("Можете приступить к снижению");
-                            sw.WriteLine("Можете приступить к снижению");
+                           
 
 
                             try
                             {
+                                d2.change += a.endOfFlight;                               
                                 int maxheight;
                                 while (a.speed >= 50 && a.speed <= 1000 && a.height >= 0)
                                 {
+                                    d2.endOfFlight("Поздравляем с успешным завершением полёта!", a, ref d2, ref delreg, ref del);
                                     maxheight = a.height;
                                     foreach (FlightDelegate item in del.GetInvocationList())
                                     {
@@ -126,10 +136,7 @@ namespace exam_sharp
                                 WriteLine(e.Message);
                             }
 
-                            if(a.speed == 0 || a.height == 0)
-                            {
-                                throw new zeroException();
-                            }
+                            
                         }
                         catch (zeroException ze)
                         {

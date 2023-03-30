@@ -108,6 +108,21 @@ namespace exam_sharp
 
         }
 
+        public void endOfFlight(string str, Airplane tmp, ref Dispathcher d2, ref DispReg delreg, ref FlightDelegate del)
+        {
+            if(tmp.speed <= 50 && tmp.height == 0)
+            {
+                Clear();
+                delreg -= d2.impose_Fine;
+                delreg -= d2.recommendedHeight;
+                delreg -= d2.check_fine;
+                del -= tmp.change_height;
+                del -= tmp.change_speed;
+                change($"{str}");
+                WriteLine($"Общее количество штрафных очков - {d2.fine}");
+            }
+        }
+
         string name;
         int weather;
         int fine;
